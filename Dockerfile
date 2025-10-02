@@ -1,23 +1,15 @@
 FROM dolfinx/lab:stable
 
-# Binder requirement: ensure Jupyter is present and recent
-RUN python3 -m pip install --no-cache-dir notebook jupyterlab
-
-# Optional: geometry/IO tools for the scripts
+# elevate, add any extra packages
+USER root
 RUN python3 -m pip install --no-cache-dir gmsh meshio
 
-# Binder requirement: run as a non-root user and make files writable
+# copy project and ensure jovyan owns it
 ARG NB_USER=jovyan
 ARG NB_UID=1000
-ENV USER=${NB_USER} NB_UID=${NB_UID} HOME=/home/${NB_USER}
-USER root
-RUN adduser --disabled-password --gecos "Default user" --uid ${NB_UID} ${NB_USER}
-
-# Copy repo into home and set ownership
-COPY . ${HOME}
-RUN chown -R ${NB_UID} ${HOME}
-USER ${NB_USER}
+ENV HOME=/home/${NB_USER}
 WORKDIR ${HOME}
+COPY --chown=${NB_UID}:${NB_UID} . ${HOME}
+USER ${NB_USER}
 
-# Start JupyterLab when Binder launches
-CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--NotebookApp.default_url=/lab"]
+# Jupyter already provided by base image; Binder will start it
